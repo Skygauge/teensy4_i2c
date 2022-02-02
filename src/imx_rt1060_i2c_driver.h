@@ -7,7 +7,7 @@
 #include <cstdint>
 #include <imxrt.h>
 #include "imx_rt1060.h"
-#include "../i2c_driver.h"
+#include "i2c_driver.h"
 
 // A read or write buffer.
 // You cannot use the same buffer for both reading and writing.
