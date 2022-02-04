@@ -6,8 +6,6 @@
 
 //#define DEBUG_I2C // Uncomment to enable debug tools
 #ifdef DEBUG_I2C
-#pragma clang diagnostic push
-#pragma ide diagnostic ignored "hicpp-signed-bitwise"
 #include <Arduino.h>
 #endif
 
@@ -24,9 +22,7 @@
 
 // Debug tools
 #ifdef DEBUG_I2C
-static void log_slave_status_register(uint32_t ssr);
 static void log_master_status_register(uint32_t msr);
-static void log_master_control_register(const char* message, uint32_t mcr);
 #endif
 
 static uint8_t empty_buffer[0];
@@ -147,6 +143,10 @@ size_t IMX_RT1060_I2CMaster::get_bytes_transferred() {
 }
 
 void IMX_RT1060_I2CMaster::write_async(uint8_t address, uint8_t* buffer, size_t num_bytes, bool send_stop) {
+#ifdef DEBUG_I2C
+    Serial.printf("Starting write_async(%d, %d, %d)\n",
+                  address, num_bytes, send_stop);
+#endif
     if (!start(address, MASTER_WRITE)) {
         return;
     }
@@ -164,6 +164,10 @@ void IMX_RT1060_I2CMaster::write_async(uint8_t address, uint8_t* buffer, size_t 
 }
 
 void IMX_RT1060_I2CMaster::read_async(uint8_t address, uint8_t* buffer, size_t num_bytes, bool send_stop) {
+#ifdef DEBUG_I2C
+    Serial.printf("Starting read_async(%d, %d, %d)\n",
+                  address, num_bytes, send_stop);
+#endif
     if (num_bytes > MAX_MASTER_READ_LENGTH) {
         _error = I2CError::invalid_request;
         return;
@@ -191,7 +195,6 @@ void IMX_RT1060_I2CMaster::read_async(uint8_t address, uint8_t* buffer, size_t n
 void IMX_RT1060_I2CMaster::_interrupt_service_routine() {
     uint32_t msr = port->MSR;
     #ifdef DEBUG_I2C
-    Serial.print("ISR: enter: ");
     log_master_status_register(msr);
     #endif
 
@@ -478,7 +481,6 @@ inline void IMX_RT1060_I2CSlave::set_receive_buffer(uint8_t* buffer, size_t size
 void IMX_RT1060_I2CSlave::_interrupt_service_routine() {
     // Read the slave status register
     uint32_t ssr = port->SSR;
-//    log_slave_status_register(ssr);
 
     if (ssr & LPI2C_SSR_AVF) {
         // Find out which address was used and clear to the address flag.
@@ -677,15 +679,7 @@ static void slave2_isr() {
 }
 
 #ifdef DEBUG_I2C
-static void log_master_control_register(const char* message, uint32_t mcr) {
-    Serial.print(message);
-    Serial.print(" MCR: ");
-    Serial.print(mcr);
-    Serial.println("");
-}
-
 static void log_master_status_register(uint32_t msr) {
-    return;
     if (msr) {
         Serial.print("MSR Flags: ");
     }
@@ -726,56 +720,4 @@ static void log_master_status_register(uint32_t msr) {
         Serial.println();
     }
 }
-
-static void log_slave_status_register(uint32_t ssr) {
-    if (ssr) {
-        Serial.print("SSR Flags: ");
-    }
-    if (ssr & LPI2C_SSR_BBF) {
-        Serial.print("BBF ");
-    }
-    if (ssr & LPI2C_SSR_SBF) {
-        Serial.print("SBF ");
-    }
-    if (ssr & LPI2C_SSR_SARF) {
-        Serial.print("SARF ");
-    }
-    if (ssr & LPI2C_SSR_GCF) {
-        Serial.print("GCF ");
-    }
-    if (ssr & LPI2C_SSR_AM1F) {
-        Serial.print("GCF ");
-    }
-    if (ssr & LPI2C_SSR_AM0F) {
-        Serial.print("AM0F ");
-    }
-    if (ssr & LPI2C_SSR_FEF) {
-        Serial.print("FEF ");
-    }
-    if (ssr & LPI2C_SSR_BEF) {
-        Serial.print("BBF ");
-    }
-    if (ssr & LPI2C_SSR_SDF) {
-        Serial.print("SDF ");
-    }
-    if (ssr & LPI2C_SSR_RSF) {
-        Serial.print("RSF ");
-    }
-    if (ssr & LPI2C_SSR_TAF) {
-        Serial.print("TAF ");
-    }
-    if (ssr & LPI2C_SSR_AVF) {
-        Serial.print("AVF ");
-    }
-    if (ssr & LPI2C_SSR_RDF) {
-        Serial.print("RDF ");
-    }
-    if (ssr & LPI2C_SSR_TDF) {
-        Serial.print("TDF ");
-    }
-    if (ssr) {
-        Serial.println();
-    }
-}
-#pragma clang diagnostic pop
-#endif  //DEBUG_I2C
+#endif
